@@ -33,10 +33,17 @@ export function Sidebar({ project }) {
                         <FontIcon iconName="Tag" />
                     </ConditionalNavLink>
                 </li>
-               <li>
+               {/* <li>
                     <ConditionalNavLink disabled={!projectId}
                         title={strings.train.title}
                         to={`/projects/${projectId}/train`}>
+                        <FontIcon iconName="MachineLearning" />
+                    </ConditionalNavLink>
+                </li> */}
+                <li>
+                    <ConditionalNavLink disabled={!projectId}
+                        title={strings.train.paddlexTitle}
+                        to={`/projects/${projectId}/trainPaddlex`}>
                         <FontIcon iconName="MachineLearning" />
                     </ConditionalNavLink>
                 </li>

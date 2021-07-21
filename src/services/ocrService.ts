@@ -93,6 +93,7 @@ export class OCRService {
         try {
             let body;
             let headers;
+            let apiUrl;
             if (filePath.startsWith("file:")) {
                 const bodyAndType = await Promise.all(
                     [
@@ -103,25 +104,77 @@ export class OCRService {
                 body = bodyAndType[0];
                 headers = { "Content-Type": mimeType, "cache-control": "no-cache" };
             } else {
-                body = { url: filePath };
-                headers = { "Content-Type": "application/json" };
+                body = { 
+                    url: filePath,
+                    apikey: 'LVvw38lAt4BTBAK1801PjcCOM2BlfsWpbEJKu11D',
+                    images: await this.getBase64Image(filePath),
+                    usertoken: '31df12f75be6d190ec06ba676b0ac393', 
+                };
+                // console.log(body)
+                headers = { "Content-Type": "application/json;charset=UTF-8" };
             }
             const apiVersion = getAPIVersion(this.project?.apiVersion);
+            if (this.project.apiUriBase.indexOf('azure')!==-1){
+                apiUrl = this.project.apiUriBase + `/formrecognizer/${apiVersion}/layout/analyze`;
+            } else {
+                apiUrl = this.project.apiUriBase
+            }
             const response = await ServiceHelper.postWithAutoRetry(
-                this.project.apiUriBase + `/formrecognizer/${apiVersion}/layout/analyze`,
+                apiUrl,
                 body,
                 { headers },
                 this.project.apiKey as string,
             );
 
-            const operationLocation = response.headers["operation-location"];
-            return this.poll(
-                () => ServiceHelper.getWithAutoRetry(operationLocation, { headers }, this.project.apiKey as string),
-                120000,
-                1500).then(async (data) => {
-                    await this.save(ocrFileName, data);
-                    return data;
-                });
+            if (response.headers["operation-location"]){
+                const operationLocation = response.headers["operation-location"];
+                return this.poll(
+                    () => ServiceHelper.getWithAutoRetry(operationLocation, { headers }, this.project.apiKey as string),
+                    120000,
+                    1500).then(async (data) => {
+                        // console.log(data)
+                        await this.save(ocrFileName, data);
+                        return data;
+                    });
+            }else {
+                return this.getResponseData(response, 120000, 2000).then(async (data) => {
+                    let lines: string[] = [];
+                    let result;
+                    for(const item of data.results){
+                        result = {
+                            boundingBox: (item.text_region.join(',')).split(',').map(Number),
+                            text: item.text,
+                            confidence: item.confidence
+                        }
+                        lines.push(result)
+                    }
+                    const dataConversion = {
+                        code: data.code,
+                        msg: data.msg,
+                        analyzeResult: {
+                            version: apiVersion,
+                            readResults: [{
+                                page: 1,
+                                angle: 0,
+                                width: data.width,
+                                height: data.height,
+                                unit: "pixel",
+                                lines: lines
+                            }],
+                            pageResults: [
+                                {
+                                    page: 1,
+                                    tables: []
+                                }
+                            ]
+                        },
+                    }
+
+                    // console.log('dataConversion', dataConversion)
+                    await this.save(ocrFileName, dataConversion);
+                    return dataConversion;
+                })
+            }
         } catch (error) {
             if (error?.toJSON()?.message === "Network Error" || error.response.status === 400) {
                 throw new Error(strings.errors.getOcrError.message);
@@ -169,6 +222,44 @@ export class OCRService {
         };
 
         return new Promise(checkSucceeded);
+    }
+
+    private getResponseData = (response, timeout, interval): Promise<any> =>{
+        const endTime = Number(new Date()) + (timeout || 10000);
+        interval = interval || 100;
+        const checkSucceeded =((resolve, reject)=>{
+            if (response.data.msg.toLowerCase() === "success") {
+                resolve(response.data);
+            } else if (Number(new Date()) < endTime) {
+                // If the request isn't succeeded and the timeout hasn't elapsed, go again
+                setTimeout(checkSucceeded, interval, resolve, reject);
+            } else {
+                // Didn't succeeded after too much time, reject
+                reject(new Error("Timed out for getting Layout results"));
+            }
+        });
+        return new Promise(checkSucceeded)
+    }
+
+    private async getBase64Image(imgUrl: string): Promise<string[]>{
+        var img = new Image();
+        return new Promise<string[]> ((resolve, reject)=>{
+            img.src = imgUrl;
+            img.onload = (()=>{
+                const canvas = document.createElement("canvas");
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0);
+                const dataURL = canvas.toDataURL('image/png');
+                const result: string[] = [];
+                result.push(dataURL.replace(/^data:image\/(png|jpg);base64,/, ""));
+                // console.log(dataURL)
+                resolve(result);
+            })
+            img.onerror = reject
+            img.setAttribute('crossOrigin', 'anonymous')
+        })
     }
 
     private isValidOcrFormat = (ocr): boolean => {

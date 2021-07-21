@@ -72,6 +72,14 @@ export default class ServiceHelper {
     ): AxiosPromise<T> =>
         ServiceHelper.sendRequestWithAutoRetry(() => axios.post(url, data, ServiceHelper.applyApiKey(config, apiKey)))
 
+    public static putWithAutoRetry = <T>(
+        url: string,
+        data?: any,
+        config?: AxiosRequestConfig,
+        apiKey?: string,
+    ): AxiosPromise<T> =>
+        ServiceHelper.sendRequestWithAutoRetry(() => axios.put(url, data, ServiceHelper.applyApiKey(config, apiKey)))
+
     public static getWithAutoRetry = <T = any>(
         url: string,
         config?: AxiosRequestConfig,

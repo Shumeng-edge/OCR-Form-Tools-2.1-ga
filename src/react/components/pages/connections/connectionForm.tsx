@@ -171,6 +171,13 @@ export default class ConnectionForm extends React.Component<IConnectionFormProps
             }
         }
 
+        // if(connection.providerOptions && connection.providerOptions['endPoint'] && errors.providerOptions['endPoint']){
+        //     const endPointRegex = new RegExp(/^(\s*)?(((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3})/);
+        //     if(!endPointRegex.test(connection.providerOptions['endPoint'])){
+        //         errors.providerOptions['endPoint'].addError('should match URI format');
+        //     }
+        // }
+
         if (this.state.classNames.indexOf("was-validated") === -1) {
             this.setState({
                 classNames: [...this.state.classNames, "was-validated"],

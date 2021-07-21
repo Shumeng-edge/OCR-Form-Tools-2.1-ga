@@ -140,6 +140,7 @@ export const english: IAppStrings = {
         labelFolderTitle: "Source",
         defaultLabelFolderURL: "/shared",
         title: "Train",
+        paddlexTitle: "Paddlex Train",
         training: "Training",
         pleaseWait: "Please wait",
         notTrainedYet: "Not trained yet",
@@ -432,6 +433,30 @@ export const english: IAppStrings = {
                     description: "Creates the blob container if it does not already exist",
                 },
                 invalidSASMessage: "Please check if you have unexpired read/write/list/delete permission to blob container/blob.",
+            },
+            minio: {
+                title: "MinIO Browser",
+                description: "",
+                endPoint: {
+                    title: 'EndPoint',
+                    description: ""
+                },
+                port:{
+                    title: 'Port',
+                    description: ""
+                },
+                useSSL:{
+                    title: 'useSSL',
+                    description: "",
+                },
+                accessKey: {
+                    title: 'AccessKey',
+                    description: ""
+                },
+                secretKey: {
+                    title: 'SecretKey',
+                    description: ""
+                },
             },
             bing: {
                 title: "Bing Image Search",
@@ -734,6 +759,10 @@ export const english: IAppStrings = {
         blobContainerIONotFound: {
             title: "Cannot find blob container/blob",
             message: "Check if blob container/blob exists in storage account.",
+        },
+        minioBucketIONotFound:{
+            title: "Cannot find bucket/object",
+            message: "Check if bucket/object exists in minio.",
         },
         blobContainerIOForbidden: {
             title: "Cannot access blob container/blob",

@@ -6,6 +6,7 @@ import {Switch, Route} from "react-router-dom";
 import HomePage from "../pages/homepage/homePage";
 import AppSettingsPage from "../pages/appSettings/appSettingsPage";
 import TrainPage from "../pages/train/trainPage";
+import TrainPagePaddleX from "../pages/train/trainPagePaddleX";
 import ConnectionPage from "../pages/connections/connectionsPage";
 import EditorPage from "../pages/editorPage/editorPage";
 import ProjectSettingsPage from "../pages/projectSettings/projectSettingsPage";
@@ -32,6 +33,7 @@ export function MainContentRouter() {
                 <Route path="/projects/create" component={ProjectSettingsPage} />
                 <Route path="/projects/:projectId/modelcompose" component={ModelComposePage} />
                 <Route path="/projects/:projectId/train" component={TrainPage} />
+                <Route path="/projects/:projectId/trainPaddlex" component={TrainPagePaddleX} />
                 <Route path="/projects/:projectId/predict" />
                 <Route path="/projects/:projectId/settings" component={ProjectSettingsPage} />
                 <Route path="/prebuilts-analyze" component={PrebuiltPredictPage} />

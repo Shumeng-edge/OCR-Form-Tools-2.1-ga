@@ -284,6 +284,10 @@ export class CloudFilePicker extends React.Component<ICloudFilePickerProps, IClo
                 const reason = interpolate(strings.errors.blobContainerIONotFound.message, {});
                 toast.error(reason, { autoClose: false });
                 return;
+            }else if (err instanceof AppError && err.errorCode === ErrorCode.MinioBucketIONotFound) {
+                const reason = interpolate(strings.errors.minioBucketIONotFound.message, {});
+                toast.error(reason, { autoClose: false });
+                return;
             }
             throw err;
         }

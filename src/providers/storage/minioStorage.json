@@ -1,0 +1,30 @@
+{
+    "title": "${strings.connections.providers.minio.title}",
+    "description": "${strings.connections.providers.minio.description}",
+    "required": [
+        "endPoint",
+        "port",
+        "accessKey",
+        "secretKey"
+    ],
+    "type": "object",
+    "properties": {
+        "endPoint": {
+            "title": "${strings.connections.providers.minio.endPoint.title}",
+            "type": "string"
+        },
+        "port": {
+            "title": "${strings.connections.providers.minio.port.title}",
+            "type": "number"
+        },
+        "accessKey": {
+            "title": "${strings.connections.providers.minio.accessKey.title}",
+            "type": "string"
+        },
+        "secretKey": {
+            "title": "${strings.connections.providers.minio.secretKey.title}",
+            "type": "string"
+        }
+
+    }
+}

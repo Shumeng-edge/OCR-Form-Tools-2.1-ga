@@ -390,6 +390,7 @@ export enum ErrorCode {
     SecurityTokenNotFound = "securityTokenNotFound",
     OverloadedKeyBinding = "overloadedKeyBinding",
     BlobContainerIONotFound = "blobContainerIONotFound",
+    MinioBucketIONotFound = "minioBucketIONotFound",
     BlobContainerIOForbidden = "blobContainerIOForbidden",
     PredictWithoutTrainForbidden = "predictWithoutTrainForbidden",
     ModelNotFound = "modelNotFound",

@@ -140,6 +140,7 @@ export interface IAppStrings {
         labelFolderTitle: string,
         defaultLabelFolderURL: string,
         title: string,
+        paddlexTitle: string,
         training: string,
         pleaseWait: string,
         notTrainedYet: string,
@@ -428,6 +429,30 @@ export interface IAppStrings {
                 },
                 invalidSASMessage: string,
             },
+            minio: {
+                title: string,
+                description: string,
+                endPoint:{
+                    title: string,
+                    description: string,
+                },
+                port: {
+                    title: string,
+                    description: string,
+                },
+                useSSL:{
+                    title: string,
+                    description: string,
+                }
+                accessKey: {
+                    title: string,
+                    description: string,
+                },
+                secretKey: {
+                    title: string,
+                    description: string,
+                },
+            },
             bing: {
                 title: string,
                 options: string,
@@ -677,6 +702,7 @@ export interface IAppStrings {
         exportFormatNotFound: IErrorMetadata,
         activeLearningPredictionError: IErrorMetadata,
         blobContainerIONotFound: IErrorMetadata,
+        minioBucketIONotFound: IErrorMetadata,
         blobContainerIOForbidden: IErrorMetadata,
         projectDeleteForbidden: IErrorMetadata,
         projectDeleteNotFound: IErrorMetadata,

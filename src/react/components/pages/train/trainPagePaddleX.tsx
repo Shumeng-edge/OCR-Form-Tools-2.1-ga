@@ -31,7 +31,7 @@ import TrainTable from "./trainTable";
 import { getAPIVersion } from "../../../../common/utils";
 import { webStorage } from "../../../../common/webStorage";
 
-export interface ITrainPageProps extends RouteComponentProps, React.Props<TrainPage> {
+export interface ITrainPageProps extends RouteComponentProps, React.Props<TrainPagePaddleX> {
     connections: IConnection[];
     appSettings: IAppSettings;
     project: IProject;
@@ -81,7 +81,7 @@ function mapDispatchToProps(dispatch) {
 }
 
 @connect(mapStateToProps, mapDispatchToProps)
-export default class TrainPage extends React.Component<ITrainPageProps, ITrainPageState> {
+export default class TrainPagePaddleX extends React.Component<ITrainPageProps, ITrainPageState> {
     private appInsights: any = null;
     private notAdjustedLabelsConfirm: React.RefObject<Confirm> = React.createRef();
     constructor(props) {

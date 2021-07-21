@@ -2174,8 +2174,8 @@ export default class Canvas extends React.Component<ICanvasProps, ICanvasState> 
         //    tagging if it's supported by FR service.
         // 2. Avoid rebuilding order index when users switch back and forth between pages.
         const ocrs = this.state.ocr;
-        const ocrReadResults = (ocrs.recognitionResults || (ocrs.analyzeResult && ocrs.analyzeResult.readResults));
-        const ocrPageResults = (ocrs.recognitionResults || (ocrs.analyzeResult && ocrs.analyzeResult.pageResults));
+        const ocrReadResults = (ocrs.results || ocrs.recognitionResults || (ocrs.analyzeResult && ocrs.analyzeResult.readResults));
+        const ocrPageResults = (ocrs.results || ocrs.recognitionResults || (ocrs.analyzeResult && ocrs.analyzeResult.pageResults));
         const imageExtent = this.imageMap.getImageExtent();
         ocrReadResults.forEach((ocr) => {
             const ocrExtent = [0, 0, ocr.width, ocr.height];
@@ -2194,6 +2194,13 @@ export default class Canvas extends React.Component<ICanvasProps, ICanvasState> 
                                 this.regionOrderById[pageIndex].push(feature.getId());
                             }
                         });
+                    }else {
+                        if (this.shouldDisplayOcrWord(line.text)) {
+                            const feature = this.createBoundingBoxVectorFeature(
+                                line.text, line.boundingBox, imageExtent, ocrExtent, ocr.page);
+                            this.regionOrders[pageIndex][feature.getId()] = order++;
+                            this.regionOrderById[pageIndex].push(feature.getId());
+                        }
                     }
                 });
             }
@@ -2239,6 +2246,11 @@ export default class Canvas extends React.Component<ICanvasProps, ICanvasState> 
                                     word.text, word.boundingBox, imageExtent, ocrExtent, ocrReadResults.page));
                             }
                         });
+                    }else{
+                        if (this.shouldDisplayOcrWord(line.text)) {
+                            textFeatures.push(this.createBoundingBoxVectorFeature(
+                                line.text, line.boundingBox, imageExtent, ocrExtent, ocrReadResults.page));
+                        }
                     }
                 });
             }

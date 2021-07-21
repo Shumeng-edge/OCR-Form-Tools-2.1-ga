@@ -3,6 +3,7 @@
 
 import { AssetProviderFactory } from "./providers/storage/assetProviderFactory";
 import { AzureBlobStorage } from "./providers/storage/azureBlobStorage";
+import { MinioStorage } from "./providers/storage/minioStorage"
 import { StorageProviderFactory } from "./providers/storage/storageProviderFactory";
 import registerToolbar from "./registerToolbar";
 import { strings } from "./common/strings";
@@ -26,6 +27,12 @@ export default function registerProviders() {
         factory: (options) => new AzureBlobStorage(options),
     });
 
+    StorageProviderFactory.register({
+        name: "minioStorage",
+        displayName: strings.connections.providers.minio.title,
+        factory: (options) => new MinioStorage(options),
+    });
+
     // Asset Providers
     AssetProviderFactory.register({
         name: "localFileSystemProxy",
@@ -37,6 +44,12 @@ export default function registerProviders() {
         name: "azureBlobStorage",
         displayName: strings.connections.providers.azureBlob.title,
         factory: (options) => new AzureBlobStorage(options),
+    });
+
+    AssetProviderFactory.register({
+        name: "minioStorage",
+        displayName: strings.connections.providers.minio.title,
+        factory: (options) => new MinioStorage(options),
     });
 
     registerToolbar();
