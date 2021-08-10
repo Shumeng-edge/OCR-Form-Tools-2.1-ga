@@ -255,13 +255,16 @@ export class MinioStorage implements IStorageProvider {
         return new Promise<string[]>((resolve, reject) => {
             try {
                 var result: string[] = [];
-                const stream = this.minioClient.listObjects(bucketName, '', true)
+                const stream = this.minioClient.listObjects(bucketName, objectPath+'/', true)
+                // console.log('stream',stream, objectPath)
                 stream.on('data', (data) => {
+                    // console.log('data',data)
                     if (objectPath === '') {
                         result.push(data.name);
                     } else if (data.name.indexOf(objectPath) !== -1) {
                         result.push(data.name);
                     }
+                    // console.log('result',result)
                 })
                 stream.on('end', ()=>{
                     console.log('读取结束')

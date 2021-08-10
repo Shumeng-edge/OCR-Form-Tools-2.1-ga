@@ -31,6 +31,17 @@ import TrainTable from "./trainTable";
 import { getAPIVersion } from "../../../../common/utils";
 import { webStorage } from "../../../../common/webStorage";
 
+
+export enum DatasetStatus {
+    XEMPTY,  //空数据集
+    XCHECKING,  //正在验证数据集
+    XCHECKFAIL,  //数据集验证失败
+    XCOPYING,  //正在导入数据集
+    XCOPYDONE,  //数据集导入成功
+    XCOPYFAIL,  //数据集导入失败
+    XSPLITED  //数据集已经切分
+
+}
 export interface ITrainPageProps extends RouteComponentProps, React.Props<TrainPagePaddleX> {
     connections: IConnection[];
     appSettings: IAppSettings;
@@ -97,7 +108,7 @@ export default class TrainPagePaddleX extends React.Component<ITrainPageProps, I
             trainingFailedMessage: "",
             hasCheckbox: false,
             modelName: "",
-            basrUrl:'http://10.50.7.47:8081',
+            basrUrl:'http://172.23.248.36:8087/',
             modelUrl: "",
             currModelId: "",
         };
@@ -383,32 +394,27 @@ export default class TrainPagePaddleX extends React.Component<ITrainPageProps, I
     }
 
     private async train(): Promise<any> {
-        const apiVersion = getAPIVersion(this.props.project?.apiVersion);
-        const baseURL = url.resolve(
-            this.props.project.apiUriBase,
-            interpolate(constants.apiModelsPath, {apiVersion}),
-        );
-        const provider = this.props.project.sourceConnection.providerOptions as any;
-        let trainSourceURL;
-        let trainPrefix;
-
-        if (this.props.project.sourceConnection.providerType === "localFileSystemProxy") {
-            trainSourceURL = this.state.inputtedLabelFolderURL;
-            trainPrefix = ""
-        } else {
-            trainSourceURL = provider.sas;
-            trainPrefix = this.props.project.folderPath ? this.props.project.folderPath : "";
+        const providerType = this.props.project.sourceConnection.providerType
+        const providerOptions = this.props.project.sourceConnection.providerOptions
+        let endPoint;
+        let port;
+        if(providerType === 'minioStorage'){
+            endPoint = providerOptions['endPoint']
+            port = providerOptions['port']
         }
+        const minioURL = endPoint + ':' + port
+        const minioObjPath = this.props.project.folderPath
+        const convertFolder = 'PP_' + minioObjPath
+        const baseURL = url.resolve(this.state.basrUrl, './convert')
+        console.log(minioObjPath, baseURL)
         await this.cleanLabelData();
         const payload = {
-            source: trainSourceURL,
-            sourceFilter: {
-                prefix: trainPrefix,
-                includeSubFolders: false,
-            },
-            useLabelFile: true,
+            minio_url:minioURL,
+            from_folder: minioObjPath,
+            folder: convertFolder,
             modelName: this.state.modelName,
         };
+        console.log(payload)
         try {
             const result = await ServiceHelper.postWithAutoRetry(
                 baseURL,
@@ -416,6 +422,7 @@ export default class TrainPagePaddleX extends React.Component<ITrainPageProps, I
                 {},
                 this.props.project.apiKey as string,
             );
+            console.log("result", result)
             this.setState({ modelUrl: result.headers.location });
             return result;
         } catch (err) {
@@ -423,20 +430,6 @@ export default class TrainPagePaddleX extends React.Component<ITrainPageProps, I
         }
     }
 
-    private async createDataset() {
-        const baseURL = this.state.basrUrl + '/dataset';
-        const params = {
-            name: this.state.modelName,
-            desc: '',
-            dataset_type: 'detection'
-        };
-        const result = await ServiceHelper.postWithAutoRetry(
-            baseURL,
-            params
-        )
-        const dataSetID = result.data['id']
-        return dataSetID
-    }
 
     private async cleanLabelData() {
         const allAssets = { ...this.props.project.assets };

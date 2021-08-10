@@ -140,7 +140,8 @@ export class OCRService {
                 return this.getResponseData(response, 120000, 2000).then(async (data) => {
                     let lines: string[] = [];
                     let result;
-                    for(const item of data.results){
+                    const results = data.results
+                    for(const item of results.rec_res){
                         result = {
                             boundingBox: (item.text_region.join(',')).split(',').map(Number),
                             text: item.text,
