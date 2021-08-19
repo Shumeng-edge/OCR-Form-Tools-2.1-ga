@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 
 import Guard from "./guard";
+import CryptoJS from "crypto-js"
 
 const ALGO = "AES-CBC";
 
@@ -40,6 +41,7 @@ export async function encrypt(message: string, secret: string): Promise<string> 
             iv: encodeHex(iv.buffer),
         };
         const bytes = encodeUtf8(JSON.stringify(json));
+        // console.log('encrypt',encodeBase64(bytes))
         return encodeBase64(bytes);
     } catch (e) {
         throw new Error(`Error encrypting data - ${e.message}`);
@@ -55,6 +57,12 @@ export async function encryptObject(message: any, secret: string) {
     Guard.null(message);
 
     return await encrypt(JSON.stringify(message), secret);
+}
+
+export async function encryptMinioObject(message: any, secret: string) {
+    Guard.null(message);
+    const encrypt = CryptoJS.AES.encrypt(JSON.stringify(message),secret).toString()
+    return encrypt
 }
 
 /**
@@ -96,13 +104,27 @@ export async function decryptObject<T = any>(encodedMessage: string, secret: str
     return JSON.parse(json) as T;
 }
 
+export async function decryptMinioObject<T = any>(encodedMessage: string, secret: string) {
+    const bytes  = CryptoJS.AES.decrypt(encodedMessage, secret);
+    const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+    return decryptedData as T;
+}
+
 export async function sha256Hash(message: string, nodejsMode?: boolean) {
     if (nodejsMode) {
         const nodejsCrypto = await require('crypto');
         return await nodejsCrypto.createHash('sha256').update(message).digest("hex");
     } else {
-        const buffer = await crypto.subtle.digest("SHA-256", encodeUtf8(message));
-        return encodeHex(buffer);
+        // const buffer = await crypto.subtle.digest("SHA-256", encodeUtf8(message));
+        // return encodeHex(buffer);
+
+        if ( message.indexOf("/datasets/") !== -1 ) {
+            const buffer = CryptoJS.SHA256(message);
+            return buffer.toString()
+        }else{
+            const buffer = await crypto.subtle.digest("SHA-256", encodeUtf8(message));
+            return encodeHex(buffer);
+        }
     }
 }
 

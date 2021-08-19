@@ -19,7 +19,7 @@ import { constants } from "../../common/constants";
  export interface IMinioCloudStorageOptions {
     endPoint: string;
     port: number;
-    useSSL: boolean,
+    useSSL: any,
     accessKey: string;
     secretKey: string;
 }
@@ -37,16 +37,26 @@ export class MinioStorage implements IStorageProvider {
 
     private minioClient : minio.Client;
     constructor(private options?:IMinioCloudStorageOptions){
-        if(this.options['useSSL']===true){
-            this.options = {
-                endPoint: options!.endPoint!,
-                port: options!.port!,
-                useSSL: false,
-                accessKey: options!.accessKey!,
-                secretKey: options.secretKey!
-            }
-            this.minioClient = new minio.Client(this.options)
+        this.options = {
+            endPoint: options!.endPoint!,
+            port: options!.port!,
+            useSSL: false,
+            accessKey: options!.accessKey!,
+            secretKey: options.secretKey!
         }
+        this.minioClient = new minio.Client(this.options)
+        // this.minioClient = new minio.Client(this.options)
+        // if(this.options['useSSL'] === true){
+        //     this.options = {
+        //         endPoint: options!.endPoint!,
+        //         port: options!.port!,
+        //         useSSL: false,
+        //         accessKey: options!.accessKey!,
+        //         secretKey: options.secretKey!
+        //     }
+        //     this.minioClient = new minio.Client(this.options)
+        // }
+        // console.log("minioClient", this.minioClient)
     }
 
     public async initialize(): Promise<void> { }
@@ -67,7 +77,15 @@ export class MinioStorage implements IStorageProvider {
 
     public async isValidProjectConnection(filepath?: any): Promise<boolean> {
         try {
+            this.options = {
+                endPoint: this.options!.endPoint!,
+                port: this.options!.port!,
+                useSSL: false,
+                accessKey: this.options!.accessKey!,
+                secretKey: this.options.secretKey!
+            }
             const client = new minio.Client(this.options);
+            // console.log('client',client)
             if(client){
                 return true
             }             
@@ -223,7 +241,8 @@ export class MinioStorage implements IStorageProvider {
 
     private async getUrl(fileName: string): Promise<string> {
         const bucketName = await this.getMinioBucket()
-        const url = "http://"+ this.options["endPoint"] + ':'+ this.options['port'] + '/' + bucketName + '/' + fileName
+        const url = this.minioClient["protocol"] + '//'+ this.minioClient["host"] + ':'+ this.minioClient['port'] + '/' + bucketName + '/' + fileName
+        // console.log(url)
         return url
     }
 
