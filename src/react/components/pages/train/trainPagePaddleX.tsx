@@ -32,16 +32,6 @@ import { getAPIVersion } from "../../../../common/utils";
 import { webStorage } from "../../../../common/webStorage";
 
 
-export enum DatasetStatus {
-    XEMPTY,  //空数据集
-    XCHECKING,  //正在验证数据集
-    XCHECKFAIL,  //数据集验证失败
-    XCOPYING,  //正在导入数据集
-    XCOPYDONE,  //数据集导入成功
-    XCOPYFAIL,  //数据集导入失败
-    XSPLITED  //数据集已经切分
-
-}
 export interface ITrainPageProps extends RouteComponentProps, React.Props<TrainPagePaddleX> {
     connections: IConnection[];
     appSettings: IAppSettings;
@@ -65,13 +55,6 @@ export interface ITrainPageState {
     basrUrl: string;
     modelUrl: string;
     currModelId: string;
-}
-
-interface ITrainApiResponse {
-    modelId: string;
-    createdDateTime: string;
-    averageModelAccuracy: number;
-    fields: object[];
 }
 
 function mapStateToProps(state: IApplicationState) {
@@ -108,7 +91,7 @@ export default class TrainPagePaddleX extends React.Component<ITrainPageProps, I
             trainingFailedMessage: "",
             hasCheckbox: false,
             modelName: "",
-            basrUrl:'http://172.23.248.36:8087/',
+            basrUrl:'http://172.23.248.36:8078/',
             modelUrl: "",
             currModelId: "",
         };
@@ -374,7 +357,10 @@ export default class TrainPagePaddleX extends React.Component<ITrainPageProps, I
         try {
             const trainRes = await this.train();
             const trainStatusRes =
-                await this.getTrainStatus(trainRes.headers["location"]);
+                await this.getTrainStatus(trainRes).then((data) => {
+                    return data
+                })
+            // console.log('trainStatusRes', trainStatusRes)
             const updatedProject = this.buildUpdatedProject(
                 this.parseTrainResult(trainStatusRes),
             );
@@ -406,7 +392,7 @@ export default class TrainPagePaddleX extends React.Component<ITrainPageProps, I
         const minioObjPath = this.props.project.folderPath
         const convertFolder = 'PP_' + minioObjPath
         const baseURL = url.resolve(this.state.basrUrl, './convert')
-        console.log(minioObjPath, baseURL)
+        // console.log(minioObjPath, baseURL)
         await this.cleanLabelData();
         const payload = {
             minio_url:minioURL,
@@ -414,7 +400,6 @@ export default class TrainPagePaddleX extends React.Component<ITrainPageProps, I
             folder: convertFolder,
             modelName: this.state.modelName,
         };
-        console.log(payload)
         try {
             const result = await ServiceHelper.postWithAutoRetry(
                 baseURL,
@@ -422,8 +407,7 @@ export default class TrainPagePaddleX extends React.Component<ITrainPageProps, I
                 {},
                 this.props.project.apiKey as string,
             );
-            console.log("result", result)
-            this.setState({ modelUrl: result.headers.location });
+            // this.setState({ modelUrl: result.headers.location });
             return result;
         } catch (err) {
             ServiceHelper.handleServiceError({...err, endpoint: baseURL});
@@ -474,18 +458,18 @@ export default class TrainPagePaddleX extends React.Component<ITrainPageProps, I
         }
     }
 
-    private async getTrainStatus(operationLocation: string): Promise<any> {
-        const timeoutPerFileInMs = 10000;  // 10 second for each file
-        const minimumTimeoutInMs = 300000;  // 5 minutes minimum waiting time  for each training process
-        const extendedTimeoutInMs = timeoutPerFileInMs * Object.keys(this.props.project.assets || []).length;
-        const res = this.poll(() => {
-            return ServiceHelper.getWithAutoRetry(
-                operationLocation,
-                { headers: { "cache-control": "no-cache" } },
-                this.props.project.apiKey as string);
-        }, Math.max(extendedTimeoutInMs, minimumTimeoutInMs), 1000);
-        return res;
+    private async getTrainStatus(response): Promise<any> {
+        const checkSucceeded =((resolve, reject)=>{
+            if (response.data.status === 1) {
+                resolve(response.data);
+            } else {
+                // Didn't succeeded after too much time, reject
+                reject(new Error("Training failed -- " + response.data.message));
+            }
+        });
+        return new Promise(checkSucceeded)
     }
+
 
     private buildUpdatedProject = (newTrainRecord: ITrainRecordProps): IProject => {
         const recentModelRecords: IRecentModel[] = this.props.project.recentModelRecords ?
@@ -504,8 +488,8 @@ export default class TrainPagePaddleX extends React.Component<ITrainPageProps, I
     }
 
     private getTrainMessage = (trainingResult): string => {
-        if (trainingResult !== undefined && trainingResult.modelInfo !== undefined
-            && trainingResult.modelInfo.status === constants.statusCodeReady) {
+        if (trainingResult !== undefined && trainingResult.data !== undefined
+            && trainingResult.data.status === 1) {
             return "Trained successfully";
         }
         return "Training failed";
@@ -519,59 +503,18 @@ export default class TrainPagePaddleX extends React.Component<ITrainPageProps, I
         this.setState({ currTrainRecord: curr });
     }
 
-    private parseTrainResult = (response: ITrainApiResponse): ITrainRecordProps => {
+    private parseTrainResult = (response): ITrainRecordProps => {
+
         return {
             modelInfo: {
-                modelId: response["modelInfo"]["modelId"],
-                createdDateTime: response["modelInfo"]["createdDateTime"],
-                modelName: response["modelInfo"]["modelName"],
+                modelId: response.emid,
+                createdDateTime: response.createdDateTime,
+                modelName: response.modelName,
                 isComposed: false,
             },
-            averageAccuracy: response["trainResult"]["averageModelAccuracy"],
-            accuracies: this.buildAccuracies(response["trainResult"]["fields"]),
+            averageAccuracy: response.averageAccuracy,
+            accuracies: response.result,
         };
-    }
-
-    private buildAccuracies = (fields: object[]): object => {
-        const accuracies = {};
-        for (const field of fields) {
-            accuracies[field["fieldName"]] = field["accuracy"];
-        }
-        return accuracies;
-    }
-
-    /**
-     * Poll function to repeatably check if request succeeded
-     * @param func - function that will be called repeatably
-     * @param timeout - timeout
-     * @param interval - interval
-     */
-    private poll = (func, timeout, interval): Promise<any> => {
-        const endTime = Number(new Date()) + (timeout || 10000);
-        interval = interval || 100;
-
-        const checkSucceeded = (resolve, reject) => {
-            const ajax = func();
-            ajax.then((response) => {
-                if (response.data.modelInfo && response.data.modelInfo.status === constants.statusCodeReady) {
-                    resolve(response.data);
-                } else if (response.data.modelInfo && response.data.modelInfo.status === "invalid") {
-                    const message = _.get(
-                        response,
-                        "data.trainResult.errors[0].message",
-                        "Sorry, we got errors while training the model.");
-                    reject(message);
-                } else if (Number(new Date()) < endTime) {
-                    // If the request isn't succeeded and the timeout hasn't elapsed, go again
-                    setTimeout(checkSucceeded, interval, resolve, reject);
-                } else {
-                    // Didn't succeeded after too much time, reject
-                    reject(new Error("Timed out, sorry, it seems the training process took too long."));
-                }
-            });
-        };
-
-        return new Promise(checkSucceeded);
     }
 
     private showCheckboxPreview = (project: IProject) => {
