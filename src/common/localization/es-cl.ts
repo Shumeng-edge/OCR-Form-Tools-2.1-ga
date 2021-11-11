@@ -141,6 +141,7 @@ export const spanish: IAppStrings = {
         labelFolderTitle: "URI de carpeta de etiquetas",
         defaultLabelFolderURL: "/shared",
         title: "Entrenar",
+        paddlexTitle: "Paddlex Train",
         training: "Entrenamiento",
         pleaseWait: "Por favor espera",
         notTrainedYet: "Aún no entrenado",
@@ -433,6 +434,30 @@ export const spanish: IAppStrings = {
                     description: "Crea el contenedor de blobs si aún no existe",
                 },
                 invalidSASMessage: "Verifique si dispone de permisos de leer/escribir/listar/borrar para el contenedor/blob.",
+            },
+            minio: {
+                title: "MinIO Browser",
+                description: "",
+                endPoint: {
+                    title: 'EndPoint',
+                    description: ""
+                },
+                port:{
+                    title: 'Port',
+                    description: ""
+                },
+                useSSL:{
+                    title: 'useSSL',
+                    description: "",
+                },
+                accessKey: {
+                    title: 'AccessKey',
+                    description: ""
+                },
+                secretKey: {
+                    title: 'SecretKey',
+                    description: ""
+                },
             },
             bing: {
                 title: "Búsqueda de Imágenes Bing",
@@ -734,6 +759,10 @@ export const spanish: IAppStrings = {
                 Compruebe la configuración de aprendizaje activa y vuelva a intentarlo",
         },
         blobContainerIONotFound: {
+            title: "",
+            message: "",
+        },
+        minioBucketIONotFound:{
             title: "",
             message: "",
         },

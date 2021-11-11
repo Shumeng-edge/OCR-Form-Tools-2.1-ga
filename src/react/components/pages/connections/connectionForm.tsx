@@ -7,6 +7,7 @@ import { FontIcon, PrimaryButton} from "@fluentui/react";
 import { IConnection } from "../../../../models/applicationState";
 import { strings, addLocValues } from "../../../../common/strings";
 import LocalFolderPicker from "../../common/localFolderPicker/localFolderPicker";
+import { ChooseUseSSL } from "../../common/chooseSSL/chooseSSL";
 import CustomFieldTemplate from "../../common/customField/customFieldTemplate";
 import ConnectionProviderPicker from "../../common/connectionProviderPicker/connectionProviderPicker";
 import { ProtectedInput } from "../../common/protectedInput/protectedInput";
@@ -57,6 +58,7 @@ export default class ConnectionForm extends React.Component<IConnectionFormProps
         localFolderPicker: (LocalFolderPicker as any) as Widget,
         connectionProviderPicker: (ConnectionProviderPicker as any) as Widget,
         protectedInput: (ProtectedInput as any) as Widget,
+        chooseUseSSL: (ChooseUseSSL as any) as Widget,
         checkbox: CustomWidget(Checkbox, (props) => ({
             checked: props.value,
             onChange: (value) => props.onChange(value.target.checked),
@@ -170,6 +172,13 @@ export default class ConnectionForm extends React.Component<IConnectionFormProps
                 errors.providerOptions["sas"].addError("should match URI format");
             }
         }
+
+        // if(connection.providerOptions && connection.providerOptions['endPoint'] && errors.providerOptions['endPoint']){
+        //     const endPointRegex = new RegExp(/^(\s*)?(((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3})/);
+        //     if(!endPointRegex.test(connection.providerOptions['endPoint'])){
+        //         errors.providerOptions['endPoint'].addError('should match URI format');
+        //     }
+        // }
 
         if (this.state.classNames.indexOf("was-validated") === -1) {
             this.setState({

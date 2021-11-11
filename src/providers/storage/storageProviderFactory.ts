@@ -29,13 +29,13 @@ export interface IStorageProvider extends IAssetProvider {
     readBinary(filePath: string): Promise<Buffer>;
     deleteFile(filePath: string, ignoreNotFound?: boolean, ignoreForbidden?: boolean): Promise<void>;
 
-    writeText(filePath: string, contents: string): Promise<void>;
+    writeText(filePath: string, contents: string, folderPath?: string): Promise<void>;
     writeBinary(filePath: string, contents: Buffer): Promise<void>;
 
     isValidProjectConnection(filepath?): Promise<boolean>;
 
     listFiles(folderPath?: string, ext?: string): Promise<string[]>;
-    isFileExists(filepath: string): Promise<boolean>;
+    isFileExists(filepath: string, folderPath?: string): Promise<boolean>;
     listContainers(folderPath?: string): Promise<string[]>;
 
     createContainer(folderPath: string): Promise<void>;

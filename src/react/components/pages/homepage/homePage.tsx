@@ -258,7 +258,7 @@ export default class HomePage extends React.Component<IHomePageProps, IHomePageS
                 projectStr = await storageProvider.readText(
                     `${decryptedProject.name}${constants.projectFileExtension}`);
             } catch (err) {
-                if (err instanceof AppError && err.errorCode === ErrorCode.BlobContainerIONotFound) {
+                if (err instanceof AppError && (err.errorCode === ErrorCode.BlobContainerIONotFound || err.errorCode === ErrorCode.MinioBucketIONotFound)) {
                     // try old file extension
                     projectStr = await storageProvider.readText(
                         `${decryptedProject.name}${constants.projectFileExtensionOld}`);
@@ -269,7 +269,7 @@ export default class HomePage extends React.Component<IHomePageProps, IHomePageS
             const selectedProject = { ...JSON.parse(projectStr), sourceConnection: project.sourceConnection };
             await this.loadSelectedProject(fillTagsColor(selectedProject));
         } catch (err) {
-            if (err instanceof AppError && err.errorCode === ErrorCode.BlobContainerIONotFound) {
+            if (err instanceof AppError && (err.errorCode === ErrorCode.BlobContainerIONotFound || err.errorCode === ErrorCode.MinioBucketIONotFound)) {
                 const reason = interpolate(strings.errors.projectNotFound.message, {file: `${project.name}${constants.projectFileExtension}`, container: project.sourceConnection.name});
                 toast.error(reason, {autoClose: false});
                 return;

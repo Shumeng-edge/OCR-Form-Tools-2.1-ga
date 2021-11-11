@@ -1,0 +1,8 @@
+{
+    "accessKey": {
+        "ui:widget": "protectedInput"
+    },
+    "secretKey": {
+        "ui:widget": "protectedInput"
+    }
+}

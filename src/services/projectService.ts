@@ -100,7 +100,7 @@ export default class ProjectService implements IProjectService {
         try {
             await storageProvider.writeText(
                 `${project.name}${constants.projectFileExtension}`,
-                JSON.stringify(project, null, 4),
+                JSON.stringify(project, null, 4), project.folderPath
             );
         } catch (error) {
             throw new Error(error);
@@ -125,7 +125,7 @@ export default class ProjectService implements IProjectService {
             let reason = "";
             if (error.errorCode === ErrorCode.BlobContainerIOForbidden) {
                 reason = interpolate(strings.errors.projectDeleteForbidden.message, { file: `${project.name}${constants.projectFileExtension}` });
-            } else if (error.errorCode === ErrorCode.BlobContainerIONotFound) {
+            } else if (error.errorCode === ErrorCode.BlobContainerIONotFound || error.errorCode === ErrorCode.MinioBucketIONotFound) {
                 reason = interpolate(strings.errors.projectDeleteNotFound.message, { file: `${project.name}${constants.projectFileExtension}` });
             } else {
                 reason = strings.errors.projectDeleteError.message;
@@ -151,7 +151,7 @@ export default class ProjectService implements IProjectService {
 
     public async isProjectNameAlreadyUsed(project: IProject): Promise<boolean> {
         const storageProvider = StorageProviderFactory.createFromConnection(project.sourceConnection);
-        return await storageProvider.isFileExists(`${project.name}${constants.projectFileExtension}`);
+        return await storageProvider.isFileExists(`${project.name}${constants.projectFileExtension}`, project.folderPath);
     }
 
     public async isValidProjectConnection(project: IProject): Promise<boolean> {
@@ -228,7 +228,7 @@ export default class ProjectService implements IProjectService {
             if (ProjectService.shouldUpdateSchema(fieldsSchema)) {
                 fieldInfo["$schema"] = constants.fieldsSchema;
                 const fieldFilePath = joinPath("/", project.folderPath, constants.fieldsFileName);
-                await storageProvider.writeText(fieldFilePath, JSON.stringify(fieldInfo, null, 4));
+                await storageProvider.writeText(fieldFilePath, JSON.stringify(fieldInfo, null, 4), project.folderPath);
             }
         } catch (err) {
             console.warn(err);
@@ -502,6 +502,6 @@ export default class ProjectService implements IProjectService {
         fieldInfo["definitions"] = definitions;
 
         const fieldFilePath = joinPath("/", project.folderPath, constants.fieldsFileName);
-        await storageProvider.writeText(fieldFilePath, JSON.stringify(fieldInfo, null, 4));
+        await storageProvider.writeText(fieldFilePath, JSON.stringify(fieldInfo, null, 4), project.folderPath);
     }
 }

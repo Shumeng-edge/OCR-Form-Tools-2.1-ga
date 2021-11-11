@@ -31,7 +31,8 @@ import TrainTable from "./trainTable";
 import { getAPIVersion } from "../../../../common/utils";
 import { webStorage } from "../../../../common/webStorage";
 
-export interface ITrainPageProps extends RouteComponentProps, React.Props<TrainPage> {
+
+export interface ITrainPageProps extends RouteComponentProps, React.Props<TrainPagePaddleX> {
     connections: IConnection[];
     appSettings: IAppSettings;
     project: IProject;
@@ -56,13 +57,6 @@ export interface ITrainPageState {
     currModelId: string;
 }
 
-interface ITrainApiResponse {
-    modelId: string;
-    createdDateTime: string;
-    averageModelAccuracy: number;
-    fields: object[];
-}
-
 function mapStateToProps(state: IApplicationState) {
     return {
         appSettings: state.appSettings,
@@ -81,7 +75,7 @@ function mapDispatchToProps(dispatch) {
 }
 
 @connect(mapStateToProps, mapDispatchToProps)
-export default class TrainPage extends React.Component<ITrainPageProps, ITrainPageState> {
+export default class TrainPagePaddleX extends React.Component<ITrainPageProps, ITrainPageState> {
     private appInsights: any = null;
     private notAdjustedLabelsConfirm: React.RefObject<Confirm> = React.createRef();
     constructor(props) {
@@ -97,7 +91,7 @@ export default class TrainPage extends React.Component<ITrainPageProps, ITrainPa
             trainingFailedMessage: "",
             hasCheckbox: false,
             modelName: "",
-            basrUrl:'http://10.50.7.47:8081',
+            basrUrl:'http://172.23.248.36:8078/',
             modelUrl: "",
             currModelId: "",
         };
@@ -363,7 +357,10 @@ export default class TrainPage extends React.Component<ITrainPageProps, ITrainPa
         try {
             const trainRes = await this.train();
             const trainStatusRes =
-                await this.getTrainStatus(trainRes.headers["location"]);
+                await this.getTrainStatus(trainRes).then((data) => {
+                    return data
+                })
+            // console.log('trainStatusRes', trainStatusRes)
             const updatedProject = this.buildUpdatedProject(
                 this.parseTrainResult(trainStatusRes),
             );
@@ -383,30 +380,24 @@ export default class TrainPage extends React.Component<ITrainPageProps, ITrainPa
     }
 
     private async train(): Promise<any> {
-        const apiVersion = getAPIVersion(this.props.project?.apiVersion);
-        const baseURL = url.resolve(
-            this.props.project.apiUriBase,
-            interpolate(constants.apiModelsPath, {apiVersion}),
-        );
-        const provider = this.props.project.sourceConnection.providerOptions as any;
-        let trainSourceURL;
-        let trainPrefix;
-
-        if (this.props.project.sourceConnection.providerType === "localFileSystemProxy") {
-            trainSourceURL = this.state.inputtedLabelFolderURL;
-            trainPrefix = ""
-        } else {
-            trainSourceURL = provider.sas;
-            trainPrefix = this.props.project.folderPath ? this.props.project.folderPath : "";
+        const providerType = this.props.project.sourceConnection.providerType
+        const providerOptions = this.props.project.sourceConnection.providerOptions
+        let endPoint;
+        let port;
+        if(providerType === 'minioStorage'){
+            endPoint = providerOptions['endPoint']
+            port = providerOptions['port']
         }
+        const minioURL = endPoint + ':' + port
+        const minioObjPath = this.props.project.folderPath
+        const convertFolder = 'PP_' + minioObjPath
+        const baseURL = url.resolve(this.state.basrUrl, './convert')
+        // console.log(minioObjPath, baseURL)
         await this.cleanLabelData();
         const payload = {
-            source: trainSourceURL,
-            sourceFilter: {
-                prefix: trainPrefix,
-                includeSubFolders: false,
-            },
-            useLabelFile: true,
+            minio_url:minioURL,
+            from_folder: minioObjPath,
+            folder: convertFolder,
             modelName: this.state.modelName,
         };
         try {
@@ -416,27 +407,13 @@ export default class TrainPage extends React.Component<ITrainPageProps, ITrainPa
                 {},
                 this.props.project.apiKey as string,
             );
-            this.setState({ modelUrl: result.headers.location });
+            // this.setState({ modelUrl: result.headers.location });
             return result;
         } catch (err) {
             ServiceHelper.handleServiceError({...err, endpoint: baseURL});
         }
     }
 
-    private async createDataset() {
-        const baseURL = this.state.basrUrl + '/dataset';
-        const params = {
-            name: this.state.modelName,
-            desc: '',
-            dataset_type: 'detection'
-        };
-        const result = await ServiceHelper.postWithAutoRetry(
-            baseURL,
-            params
-        )
-        const dataSetID = result.data['id']
-        return dataSetID
-    }
 
     private async cleanLabelData() {
         const allAssets = { ...this.props.project.assets };
@@ -481,18 +458,18 @@ export default class TrainPage extends React.Component<ITrainPageProps, ITrainPa
         }
     }
 
-    private async getTrainStatus(operationLocation: string): Promise<any> {
-        const timeoutPerFileInMs = 10000;  // 10 second for each file
-        const minimumTimeoutInMs = 300000;  // 5 minutes minimum waiting time  for each training process
-        const extendedTimeoutInMs = timeoutPerFileInMs * Object.keys(this.props.project.assets || []).length;
-        const res = this.poll(() => {
-            return ServiceHelper.getWithAutoRetry(
-                operationLocation,
-                { headers: { "cache-control": "no-cache" } },
-                this.props.project.apiKey as string);
-        }, Math.max(extendedTimeoutInMs, minimumTimeoutInMs), 1000);
-        return res;
+    private async getTrainStatus(response): Promise<any> {
+        const checkSucceeded =((resolve, reject)=>{
+            if (response.data.status === 1) {
+                resolve(response.data);
+            } else {
+                // Didn't succeeded after too much time, reject
+                reject(new Error("Training failed -- " + response.data.message));
+            }
+        });
+        return new Promise(checkSucceeded)
     }
+
 
     private buildUpdatedProject = (newTrainRecord: ITrainRecordProps): IProject => {
         const recentModelRecords: IRecentModel[] = this.props.project.recentModelRecords ?
@@ -511,8 +488,8 @@ export default class TrainPage extends React.Component<ITrainPageProps, ITrainPa
     }
 
     private getTrainMessage = (trainingResult): string => {
-        if (trainingResult !== undefined && trainingResult.modelInfo !== undefined
-            && trainingResult.modelInfo.status === constants.statusCodeReady) {
+        if (trainingResult !== undefined && trainingResult.data !== undefined
+            && trainingResult.data.status === 1) {
             return "Trained successfully";
         }
         return "Training failed";
@@ -526,59 +503,18 @@ export default class TrainPage extends React.Component<ITrainPageProps, ITrainPa
         this.setState({ currTrainRecord: curr });
     }
 
-    private parseTrainResult = (response: ITrainApiResponse): ITrainRecordProps => {
+    private parseTrainResult = (response): ITrainRecordProps => {
+
         return {
             modelInfo: {
-                modelId: response["modelInfo"]["modelId"],
-                createdDateTime: response["modelInfo"]["createdDateTime"],
-                modelName: response["modelInfo"]["modelName"],
+                modelId: response.emid,
+                createdDateTime: response.createdDateTime,
+                modelName: response.modelName,
                 isComposed: false,
             },
-            averageAccuracy: response["trainResult"]["averageModelAccuracy"],
-            accuracies: this.buildAccuracies(response["trainResult"]["fields"]),
+            averageAccuracy: response.averageAccuracy,
+            accuracies: response.result,
         };
-    }
-
-    private buildAccuracies = (fields: object[]): object => {
-        const accuracies = {};
-        for (const field of fields) {
-            accuracies[field["fieldName"]] = field["accuracy"];
-        }
-        return accuracies;
-    }
-
-    /**
-     * Poll function to repeatably check if request succeeded
-     * @param func - function that will be called repeatably
-     * @param timeout - timeout
-     * @param interval - interval
-     */
-    private poll = (func, timeout, interval): Promise<any> => {
-        const endTime = Number(new Date()) + (timeout || 10000);
-        interval = interval || 100;
-
-        const checkSucceeded = (resolve, reject) => {
-            const ajax = func();
-            ajax.then((response) => {
-                if (response.data.modelInfo && response.data.modelInfo.status === constants.statusCodeReady) {
-                    resolve(response.data);
-                } else if (response.data.modelInfo && response.data.modelInfo.status === "invalid") {
-                    const message = _.get(
-                        response,
-                        "data.trainResult.errors[0].message",
-                        "Sorry, we got errors while training the model.");
-                    reject(message);
-                } else if (Number(new Date()) < endTime) {
-                    // If the request isn't succeeded and the timeout hasn't elapsed, go again
-                    setTimeout(checkSucceeded, interval, resolve, reject);
-                } else {
-                    // Didn't succeeded after too much time, reject
-                    reject(new Error("Timed out, sorry, it seems the training process took too long."));
-                }
-            });
-        };
-
-        return new Promise(checkSucceeded);
     }
 
     private showCheckboxPreview = (project: IProject) => {

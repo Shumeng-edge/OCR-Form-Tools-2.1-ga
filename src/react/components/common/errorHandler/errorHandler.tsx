@@ -22,6 +22,9 @@ export function throwUnhandledRejectionForEdge(error: any, ignoreNotFound?: bool
         if (error instanceof AppError && error.errorCode === ErrorCode.BlobContainerIONotFound && ignoreNotFound) {
             return;
         }
+        if (error instanceof AppError && error.errorCode === ErrorCode.MinioBucketIONotFound && ignoreNotFound) {
+            return;
+        }
         if (error instanceof AppError && error.errorCode === ErrorCode.BlobContainerIOForbidden && ignoreForbidden) {
             return;
         }

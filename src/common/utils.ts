@@ -3,7 +3,7 @@
 
 import Guard from "./guard";
 import { IProject, ISecurityToken, IProviderOptions, ISecureString, ITag, FieldType, FieldFormat } from "../models/applicationState";
-import { encryptObject, decryptObject, encrypt, decrypt } from "./crypto";
+import { encryptObject, decryptObject, encryptMinioObject, decryptMinioObject, encrypt, decrypt } from "./crypto";
 import UTIF from "utif";
 import { useState, useEffect } from 'react';
 import {constants} from "./constants";
@@ -96,10 +96,15 @@ export async function encryptProject(project: IProject, securityToken: ISecurity
         sourceConnection: { ...project.sourceConnection },
     };
 
-    encrypted.sourceConnection.providerOptions =
-        await encryptProviderOptions(project.sourceConnection.providerOptions, securityToken.key);
-
+    if(encrypted.sourceConnection.providerType === 'minioStorage'){
+        encrypted.sourceConnection.providerOptions =
+            await encryptProviderOptionsMinio(project.sourceConnection.providerOptions, securityToken.key);
+    }else{
+        encrypted.sourceConnection.providerOptions =
+            await encryptProviderOptions(project.sourceConnection.providerOptions, securityToken.key);      
+    }
     encrypted.apiKey = await encryptString(project.apiKey, securityToken.key);
+    // console.log("encrypted", encrypted)
 
     return encrypted;
 }
@@ -115,8 +120,13 @@ export async function decryptProject(project: IProject, securityToken: ISecurity
         sourceConnection: { ...project.sourceConnection },
     };
 
-    decrypted.sourceConnection.providerOptions =
-        await decryptProviderOptions(decrypted.sourceConnection.providerOptions, securityToken.key);
+    if(decrypted.sourceConnection.providerType === 'minioStorage'){
+        decrypted.sourceConnection.providerOptions = 
+            await decryptProviderOptionsMinio(decrypted.sourceConnection.providerOptions, securityToken.key);
+    }else{
+        decrypted.sourceConnection.providerOptions = 
+            await decryptProviderOptions(decrypted.sourceConnection.providerOptions, securityToken.key);
+    }
 
     decrypted.apiKey = await decryptString(project.apiKey, securityToken.key);
 
@@ -137,6 +147,21 @@ async function encryptProviderOptions(providerOptions: IProviderOptions | ISecur
     } as ISecureString;
 }
 
+async function encryptProviderOptionsMinio(providerOptions: IProviderOptions | ISecureString, secret: string) {
+    if (!providerOptions) {
+        return null;
+    }
+
+    if (providerOptions.encrypted) {
+        return providerOptions as ISecureString;
+    }
+
+    return {
+        encrypted: await encryptMinioObject(providerOptions, secret),
+    } as ISecureString;
+}
+
+
 async function decryptProviderOptions<T = IProviderOptions>(
     providerOptions: IProviderOptions | ISecureString,
     secret: string) {
@@ -146,6 +171,17 @@ async function decryptProviderOptions<T = IProviderOptions>(
     }
 
     return await decryptObject(providerOptions.encrypted, secret) as T;
+}
+
+async function decryptProviderOptionsMinio<T = IProviderOptions>(
+    providerOptions: IProviderOptions | ISecureString,
+    secret: string) {
+    const secureString = providerOptions as ISecureString;
+    if (!(secureString && secureString.encrypted)) {
+        return providerOptions as T;
+    }
+
+    return await decryptMinioObject(providerOptions.encrypted, secret) as T;
 }
 
 async function encryptString(str: string | ISecureString, secret: string) {

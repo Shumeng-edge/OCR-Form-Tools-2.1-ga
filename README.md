@@ -1,6 +1,5 @@
 
 # Form OCR Testing Tool
-
 Help us improve Form Recognizer. [Take our survey!](https://aka.ms/FR-HaTS-Survey)
 
 ## Features Preview

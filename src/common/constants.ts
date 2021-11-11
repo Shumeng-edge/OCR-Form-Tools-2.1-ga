@@ -31,8 +31,8 @@ export const constants = {
     statusCodeFailed: "failed",
     statusCodeInvalid: "invalid",
     apiKeyHeader: "Ocp-Apim-Subscription-Key",
-    maxRetry: 8,
-    initialRetryInterval: 500, // ms
+    maxRetry: 10,
+    initialRetryInterval: 1000, // ms
     convertedImageFormat: "image/jpeg",
     convertedImageQuality: 0.7,
     convertedThumbnailQuality: 0.2,

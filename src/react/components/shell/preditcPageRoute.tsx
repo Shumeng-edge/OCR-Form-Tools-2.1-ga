@@ -38,6 +38,7 @@ export function PredictPageRoute() {
             path={[
                 "/projects/:projectId/predict",
                 "/projects/:projectId/train",
+                "/projects/:projectId/trainPaddlex",
                 "/projects/:projectId/edit",
                 "/projects/:projectId/settings",
                 "/"]}
