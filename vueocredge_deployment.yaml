@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vueocredge-deployment
+  labels:
+    app: vueocredge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vueocredge
+  template:
+    metadata:
+      labels:
+        app: vueocredge
+    spec:
+      containers:
+      - name: static-site
+        image: meng2021/vueocredge:latest
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: volv
+          mountPath: /vueocredge/data
+        ports:
+        - containerPort: 80
+      volumes:
+      - name: volv
+        hostPath:
+          path: /home/data/ocrdata
