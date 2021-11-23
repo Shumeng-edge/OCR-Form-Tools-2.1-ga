@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: static-site
-        image: meng2021/vueocredge:latest
+        image: meng2021/vueocredge:#{Build.BuildId}#
         imagePullPolicy: Always
         volumeMounts:
         - name: volv
