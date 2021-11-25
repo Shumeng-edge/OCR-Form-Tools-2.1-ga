@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -27,3 +28,26 @@ spec:
       - name: volv
         hostPath:
           path: /home/data/ocrdata
+---
+
+---
+# use NodePort -- start
+apiVersion: v1
+kind: Service
+metadata:
+  name: vueocredge-service
+  labels:
+    app: vueocredge-service
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 80
+    nodePort: 32098
+  selector:
+    app: vueocredge
+
+# use NodePort -- end
+---
