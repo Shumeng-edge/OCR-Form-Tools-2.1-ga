@@ -35,9 +35,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: vueocredge-service
+  name: vueocredge-service1
   labels:
-    app: vueocredge-service
+    app: vueocredge-service1
 spec:
   type: NodePort
   ports:
