@@ -35,9 +35,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: vueocredge-service1
+  name: vueocredge-service
   labels:
-    app: vueocredge-service1
+    app: vueocredge-service
 spec:
   type: NodePort
   ports:
@@ -45,7 +45,6 @@ spec:
     port: 80
     protocol: TCP
     targetPort: 80
-    nodePort: 32098
   selector:
     app: vueocredge
 
